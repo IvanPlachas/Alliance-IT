@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <thread>
-#include <unordered_set>
+#include <unordered_map>
 
 bool normalizeAirlineStr(const std::string &str, std::string &resultStr) {
     //! Проверка на корректность размера строки.
@@ -67,9 +67,11 @@ bool normalizeAirlineStr(const std::string &str, std::string &resultStr) {
 
 void processFile(const std::string &inputPath, const std::string &outputPath) {
     std::ifstream input(inputPath);
-    std::ofstream output(outputPath);
 
-    std::unordered_set<std::string> uniqueFlights;
+    // Ключом является нормализованная строка, а значением: строка из файла in.txt
+    // Если же в выходной файл можно записать нормализованные строки, то значение
+    // можно заменить на bool, который показывал бы, нужно ли записывать строку в файл
+    std::unordered_map<std::string, std::string> flights;
     std::string line;
     while (std::getline(input, line)) {
         std::string normalizedStr;
@@ -77,11 +79,20 @@ void processFile(const std::string &inputPath, const std::string &outputPath) {
         if(!normalizeAirlineStr(line, normalizedStr)) {
             continue;
         }
-        if(uniqueFlights.count(normalizedStr)) {
-            continue;
+        if(flights.find(normalizedStr) == flights.cend()) {
+            flights[normalizedStr] = line;
         }
-        uniqueFlights.insert(normalizedStr);
-        output << line << "\n";
+        else if(!flights.at(normalizedStr).empty()){
+            // Если уже есть элемент и его значение не пусто, то очищаем его значение
+            flights[normalizedStr].clear();
+        }
+    }
+
+    std::ofstream output(outputPath);
+    for(const auto &item: flights) {
+        if(!item.second.empty()) {
+            output << item.second << "\n";
+        }
     }
 }
 
